@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Graphical Density Grounding- Browser Execution Layer",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Spatial text representation of web pages for AI agent consumption- by Artiqal",
   "permissions": [
     "activeTab",

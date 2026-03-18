@@ -25,7 +25,7 @@
 **AI agents see web pages as screenshots. We convert them to text.**<br>
 Any model reads it. No vision encoder. 10-30x cheaper per step.
 
-[Quick Start](#quick-start) · [How It Works](#how-it-works) · [API Reference](#api-reference) · [Benchmarks](#benchmarks) · [Architecture](#architecture)
+[Quick Start](#quick-start) · [How It Works](#how-it-works) · [API Reference](#api-reference) · [MCP Integration](#mcp-integration) · [Multi-Model CLI](#multi-model-cli) · [Benchmarks](#benchmarks) · [Architecture](#architecture)
 
 </div>
 
@@ -253,15 +253,67 @@ The bridge exposes a local HTTP API on `127.0.0.1:7080`:
 
 ---
 
+## MCP Integration
+
+Connect GDG to Claude Desktop, Cursor, or any MCP client:
+
+```json
+{
+  "mcpServers": {
+    "gdg-browser": {
+      "command": "node",
+      "args": ["/path/to/bridge/mcp-server.js"]
+    }
+  }
+}
+```
+
+Tools: `gdg_get_state`, `gdg_click`, `gdg_fill`, `gdg_select`, `gdg_scroll`, `gdg_navigate`, `gdg_keypress`, `gdg_back`, `gdg_hover`, `gdg_tabs`
+
+---
+
+## Multi-Model CLI
+
+One script, any AI provider:
+
+```bash
+python bridge/gdg-agent.py "What's trending on GitHub?"
+python bridge/gdg-agent.py -m openai/gpt-4o "Find flights to Tokyo"
+python bridge/gdg-agent.py -m ollama/llama3 "Check Hacker News"
+python bridge/gdg-agent.py -m groq/llama-3.3-70b-versatile "Search Amazon"
+python bridge/gdg-agent.py -m gemini/gemini-2.0-flash "Go to Reddit"
+python bridge/gdg-agent.py -m sambanova/Meta-Llama-3.1-70B-Instruct "Check weather"
+```
+
+Supports: Anthropic, OpenAI, Groq, Ollama (local), Sambanova, Gemini
+
+---
+
 ## Benchmarks
 
 Tested against WebArena-style tasks on a Magento admin panel (multi-step navigation, data retrieval, form interaction):
 
-```
-Run 1 → 0%   (0/5)   394K tokens   33 min    broken loop
-Run 2 → 40%  (2/5)   172K tokens   5.8 min   prompt fixes
-Run 3 → 60%  (3/5)   172K tokens   10 min    read mode (v0.2)
-```
+**WebArena — Magento admin panel** (multi-step navigation, data retrieval, form interaction):
+
+| Run | Score | Tokens | Time | What Changed |
+|-----|-------|--------|------|--------------|
+| Run 1 | 0/5 (0%) | 394K | 33 min | Baseline — broken agent loop |
+| Run 2 | 2/5 (40%) | 172K | 5.8 min | Prompt + budget fixes only |
+| Run 3 | **3/5 (60%)** | **172K** | **10 min** | Read mode — agent can see text content |
+
+0% to 60% in one day. Same token budget. No task-specific tuning.
+
+**WebVoyager — GitHub tasks:**
+
+| Task | Intent | Steps | Result |
+|------|--------|-------|--------|
+| gh_001 | Open issues in anthropics/anthropic-sdk-python | 2 | ✓ Found count |
+| gh_002 | Most-used language in microsoft/vscode | 8 | ✓ TypeScript |
+| gh_003 | Latest release of openai/openai-python | 2 | ✓ v2.29.0 |
+| gh_004 | Contributor count for facebook/react | 25 | ✗ Hit step limit |
+| gh_005 | About section of huggingface/transformers | 2 | ✓ Found description |
+
+**Score: 80% (4/5)** — three tasks completed in just 2 steps.
 
 **Comparison to screenshot-based agents:**
 
@@ -310,8 +362,10 @@ GDG-browser/
 ├── icons/                  Extension icons
 ├── bridge/
 │   ├── server.js           Native messaging host + HTTP API server
+│   ├── mcp-server.js       MCP server for Claude Desktop / Cursor integration
 │   ├── install.sh          One-time setup for native messaging registration
 │   ├── gd_client.py        Python client library
+│   ├── gdg-agent.py        Universal multi-model browser agent CLI
 │   ├── agent_example.py    Example AI agent loop
 │   └── benchmark.py        WebArena benchmark harness
 └── README.md
@@ -324,6 +378,7 @@ GDG-browser/
 - [x] **v0.1** — Spatial renderer + action executor + popup testing UI
 - [x] **v0.2** — Read mode, interaction hints, form grouping, layer awareness, table extraction
 - [x] **API** — HTTP bridge + Python client + agent example
+- [x] **v0.2.1** — MCP server (Claude Desktop / Cursor), multi-model CLI (Anthropic, OpenAI, Groq, Ollama, Gemini, Sambanova)
 - [ ] **v0.3** — State diff (send only changes), hidden DOM flow scan, iframe pipelining
 - [ ] **Sessions** — Checkpoint/restore across model context resets
 - [ ] **Desktop** — macOS/Windows accessibility tree → spatial text (same technique, native apps)
